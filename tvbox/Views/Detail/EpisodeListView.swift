@@ -13,6 +13,8 @@ struct EpisodeListView: View {
     @State private var currentGroup = 0
     /// 每个分组展示的剧集数量。
     private let groupSize = 50
+    /// 自适应列：根据可用宽度自动换行，避免集数过多时右侧被截断。
+    private let gridColumns = [GridItem(.adaptive(minimum: 78), spacing: 10)]
     
     /// 分组总数，至少为 1，避免空数组时出现 0 组的边界问题。
     private var groupCount: Int {
@@ -63,44 +65,40 @@ struct EpisodeListView: View {
                 }
             }
             
-            // 剧集网格
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHGrid(rows: [
-                    GridItem(.fixed(44)),
-                    GridItem(.fixed(44))
-                ], spacing: 10) {
-                    // 这里使用当前组内索引 + 组偏移，换算成全局索引以便外部状态一致。
-                    ForEach(Array(currentEpisodes.enumerated()), id: \.offset) { index, episode in
-                        let actualIndex = currentGroup * groupSize + index
-                        Button {
-                            onSelect(actualIndex)
-                        } label: {
-                            Text(episode.name)
-                                .font(.system(size: 13, weight: actualIndex == selectedIndex ? .bold : .medium))
-                                .foregroundColor(actualIndex == selectedIndex ? .white : .white.opacity(0.7))
-                                .frame(minWidth: 70)
-                                .frame(height: 44)
-                                .background(
-                                    ZStack {
-                                        if actualIndex == selectedIndex {
-                                            AppTheme.accentGradient
-                                        } else {
-                                            Color.white.opacity(0.05)
-                                        }
+            // 剧集网格：自适应换行，避免横向裁切。
+            LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 10) {
+                // 这里使用当前组内索引 + 组偏移，换算成全局索引以便外部状态一致。
+                ForEach(Array(currentEpisodes.enumerated()), id: \.offset) { index, episode in
+                    let actualIndex = currentGroup * groupSize + index
+                    Button {
+                        onSelect(actualIndex)
+                    } label: {
+                        Text(episode.name)
+                            .font(.system(size: 13, weight: actualIndex == selectedIndex ? .bold : .medium))
+                            .foregroundColor(actualIndex == selectedIndex ? .white : .white.opacity(0.7))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(
+                                ZStack {
+                                    if actualIndex == selectedIndex {
+                                        AppTheme.accentGradient
+                                    } else {
+                                        Color.white.opacity(0.05)
                                     }
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(actualIndex == selectedIndex ? Color.clear : Color.white.opacity(0.1), lineWidth: 0.5)
-                                )
-                        }
-                        .buttonStyle(.plain)
+                                }
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(actualIndex == selectedIndex ? Color.clear : Color.white.opacity(0.1), lineWidth: 0.5)
+                            )
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 20)
             }
-            .frame(height: 100)
+            .padding(.horizontal, 20)
         }
     }
 }
